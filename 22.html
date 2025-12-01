@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹珠撞墙游戏（智能难度版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        h1, h2, h3 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #38b2ac;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+        button:hover {
+            background-color: #319795;
+        }
+        .btn-secondary {
+            background-color: #4299e1;
+        }
+        .btn-secondary:hover {
+            background-color: #3182ce;
+        }
+        .btn-danger {
+            background-color: #e53e3e;
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .game-container {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            border: 3px solid #2d3748;
+            margin: 20px auto;
+            background-color: #f8f9fa;
+            overflow: hidden;
+        }
+        .paddle {
+            position: absolute;
+            width: 80px;
+            height: 15px;
+            background-color: #e53e3e;
+            border-radius: 8px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #4299e1;
+            border-radius: 50%;
+        }
+        .wall {
+            position: absolute;
+            background-color: #2d3748;
+        }
+        .info {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 18px;
+            color: #2d3748;
+            display: flex;
+            justify-content: space-around;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rank-list {
+            list-style: none;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .rank-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rank-item:first-child {
+            background-color: #fff8e1;
+            font-weight: bold;
+            color: #ed8936;
+        }
+        .rank-item:nth-child(2) {
+            background-color: #f5f5f5;
+        }
+        .rank-item:nth-child(3) {
+            background-color: #ffebee;
+            color: #e53e3e;
+        }
+        .error {
+            color: #e53e3e;
+            text-align: center;
+            margin: 10px 0;
+            height: 20px;
+        }
+        .level-select {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .level-btn {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #48bb78;
+        }
+        .level-btn:hover {
+            background-color: #38a169;
+        }
+        .skill-level {
+            color: #68d391;
+            font-weight: bold;
+        }
+        /* 新增游戏结束弹窗样式 */
+        .game-over-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+        .modal-content p {
+            margin-bottom: 25px;
+            font-size: 18px;
+            color: #4a5568;
+        }
+        .modal-btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .modal-btn {
+            width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 游戏结束弹窗 -->
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">游戏结束</h2>
+            <p id="modalMessage">你已完成挑战！</p>
+            <div class="modal-btn-group">
+                <button class="modal-btn" id="continueBtn">继续游戏</button>
+                <button class="modal-btn btn-secondary" id="homeBtn">返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录页面 -->
+    <div class="container">
+        <div id="loginPage" class="page active">
+            <h1>弹珠撞墙游戏</h1>
+            <div class="error" id="loginError"></div>
+            <div class="form-group">
+                <label for="loginUsername">用户名</label>
+                <input type="text" id="loginUsername" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码" required>
+            </div>
+            <button onclick="login()">登录</button>
+            <div class="btn-group">
+                <button class="btn-secondary" onclick="switchPage('registerPage')">注册账号</button>
+            </div>
+        </div>
+
+        <!-- 注册页面 -->
+        <div id="registerPage" class="page">
+            <h1>账号注册</h1>
+            <div class="error" id="registerError"></div>
+            <div class="form-group">
+                <label for="regUsername">用户名</label>
+                <input type="text" id="regUsername" placeholder="请设置用户名（3-10位）" required>
+            </div>
+            <div class="form-group">
+                <label for="regPassword">密码</label>
+                <input type="password" id="regPassword" placeholder="请设置密码（6-16位）" required>
+            </div>
+            <div class="form-group">
+                <label for="regConfirmPwd">确认密码</label>
+                <input type="password" id="regConfirmPwd" placeholder="请再次输入密码" required>
+            </div>
+            <button onclick="register()">注册</button>
+            <button class="btn-secondary" onclick="switchPage('loginPage')">返回登录</button>
+        </div>
+
+        <!-- 游戏页面 -->
+        <div id="gamePage" class="page">
+            <h1>弹珠撞墙游戏</h1>
+            <div class="info">
+                <div class="info-item">用户名: <span id="currentUser"></span></div>
+                <div class="info-item">技能等级: <span id="skillLevel" class="skill-level">1</span></div>
+                <div class="info-item">当前关卡: <span id="currentLevel">1</span></div>
+                <div class="info-item">用时: <span id="timer">00:00</span></div>
+            </div>
+            <div class="level-select" id="levelSelect">
+                <h3>选择难度模式</h3>
+                <button class="level-btn" onclick="startGame('auto')">智能模式（推荐）</button>
+                <button class="level-btn" onclick="startGame('fixed')">固定模式</button>
+            </div>
+            <div class="game-container" id="gameContainer">
+                <div class="paddle" id="paddle"></div>
+                <div class="ball" id="ball"></div>
+            </div>
+            <div class="btn-group">
+                <button onclick="restartGame()">重新开始</button>
+                <button class="btn-secondary" onclick="switchPage('rankPage')">查看排行榜</button>
+                <button class="btn-danger" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 排行榜页面 -->
+        <div id="rankPage" class="page">
+            <h1>游戏排行榜</h1>
+            <h3>个人历史成绩</h3>
+            <ul id="personalRank" class="rank-list"></ul>
+            <h3>总排行榜（前10名）</h3>
+            <ul id="totalRank" class="rank-list"></ul>
+            <button class="btn-secondary" onclick="switchPage('gamePage')">返回游戏</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let timerInterval = null;
+        let startTime = null;
+        let currentLevel = 1;
+        let totalLevels = 1;
+        let gameMode = 'auto'; // 新增：游戏模式（auto/fixed）
+        let ballSpeedX = 3;
+        let ballSpeedY = -3;
+        let gameRunning = false;
+        let userSkillLevel = 1; // 新增：用户技能等级
+        let consecutiveWins = 0; // 新增：连续胜利次数
+        let recentPerformance = []; // 新增：最近表现记录
+
+        // DOM元素
+        const gameContainer = document.getElementById('gameContainer');
+        const paddle = document.getElementById('paddle');
+        const ball = document.getElementById('ball');
+        const timerEl = document.getElementById('timer');
+        const currentLevelEl = document.getElementById('currentLevel');
+        const levelSelect = document.getElementById('levelSelect');
+        const skillLevelEl = document.getElementById('skillLevel');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const continueBtn = document.getElementById('continueBtn');
+        const homeBtn = document.getElementById('homeBtn');
+
+        // 页面切换
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'rankPage') {
+                loadRankData();
+            } else if (pageId === 'gamePage' && currentUser) {
+                loadUserSkillLevel();
+                resetGameState();
+            }
+        }
+
+        // 初始化本地存储
+        function initLocalStorage() {
+            if (!localStorage.getItem('marbleUsers')) {
+                localStorage.setItem('marbleUsers', JSON.stringify({}));
+            }
+            if (!localStorage.getItem('marbleRanks')) {
+                localStorage.setItem('marbleRanks', JSON.stringify([]));
+            }
+            if (!localStorage.getItem('userSkills')) {
+                localStorage.setItem('userSkills', JSON.stringify({}));
+            }
+        }
+
+        // 加载用户技能等级
+        function loadUserSkillLevel() {
+            const userSkills = JSON.parse(localStorage.getItem('userSkills')) || {};
+            userSkillLevel = userSkills[currentUser] || 1;
+            skillLevelEl.textContent = userSkillLevel;
+        }
+
+        // 更新用户技能等级
+        function updateUserSkillLevel(isWin, timeTaken) {
+            // 计算表现评分 (1-100)
+            const baseScore = isWin ? 70 : 30;
+            const timeFactor = Math.max(0, 30 - timeTaken / 10); // 时间越短评分越高
+            const levelFactor = currentLevel * 5;
+            const performanceScore = Math.min(100, baseScore + timeFactor + levelFactor);
+
+            // 记录最近5次表现
+            recentPerformance.push(performanceScore);
+            if (recentPerformance.length > 5) recentPerformance.shift();
+
+            // 计算平均表现
+            const avgPerformance = recentPerformance.reduce((sum, score) => sum + score, 0) / recentPerformance.length;
+
+            // 更新连续胜利次数
+            if (isWin) {
+                consecutiveWins++;
+            } else {
+                consecutiveWins = Math.max(0, consecutiveWins - 1);
+            }
+
+            // 根据表现调整技能等级
+            let levelChange = 0;
+            if (avgPerformance > 80 && consecutiveWins >= 2) {
+                levelChange = 1; // 表现优秀且连续胜利，提升等级
+            } else if (avgPerformance < 40 && consecutiveWins <= 0) {
+                levelChange = -1; // 表现不佳，降低等级
+            }
+
+            // 应用等级变化（确保等级在1-10范围内）
+            userSkillLevel = Math.max(1, Math.min(10, userSkillLevel + levelChange));
+            
+            // 保存技能等级
+            const userSkills = JSON.parse(localStorage.getItem('userSkills')) || {};
+            userSkills[currentUser] = userSkillLevel;
+            localStorage.setItem('userSkills', JSON.stringify(userSkills));
+            
+            // 更新显示
+            skillLevelEl.textContent = userSkillLevel;
+        }
+
+        // 登录功能
+        function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorEl = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorEl.textContent = '用户名和密码不能为空';
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('marbleUsers'));
+            if (users[username] && users[username] === password) {
+                currentUser = username;
+                document.getElementById('currentUser').textContent = username;
+                loadUserSkillLevel(); // 加载用户技能等级
+                errorEl.textContent = '';
+                switchPage('gamePage');
+            } else {
+                errorEl.textContent = '用户名或密码错误';
+            }
+        }
+
+        // 注册功能
+        function register() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const confirmPwd = document.getElementById('regConfirmPwd').value.trim();
+            const errorEl = document.getElementById('registerError');
+
+            if (!username || !password || !confirmPwd) {
+                errorEl.textContent = '所有字段不能为空';
+                return;
+            }
+            if (username.length < 3 || username.length > 10) {
+                errorEl.textContent = '用户名长度需在3-10位之间';
+                return;
+            }
+            if (password.length < 6 || password.length > 16) {
+                errorEl.textContent = '密码长度需在6-16位之间';
+                return;
+            }
+            if (password !== confirmPwd) {
+                errorEl.textContent = '两次输入的密码不一致';
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('marbleUsers'));
+            if (users[username]) {
+                errorEl.textContent = '该用户名已存在';
+                return;
+            }
+
+            users[username] = password;
+            localStorage.setItem('marbleUsers', JSON.stringify(users));
+            
+            // 初始化新用户技能等级
+            const userSkills = JSON.parse(localStorage.getItem('userSkills')) || {};
+            userSkills[username] = 1;
+            localStorage.setItem('userSkills', JSON.stringify(userSkills));
+            
+            errorEl.textContent = '注册成功！即将跳转到登录页';
+            setTimeout(() => switchPage('loginPage'), 1500);
+        }
+
+        // 退出登录
+        function logout() {
+            clearInterval(timerInterval);
+            currentUser = null;
+            currentLevel = 1;
+            totalLevels = 1;
+            gameRunning = false;
+            timerEl.textContent = '00:00';
+            currentLevelEl.textContent = '1';
+            switchPage('loginPage');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // 根据难度参数生成关卡（撞墙）
+        function generateWalls(level, difficultyParams) {
+            document.querySelectorAll('.wall').forEach(wall => wall.remove());
+            
+            const { wallCount, minWidth, maxWidth, minGap } = difficultyParams;
+            const containerWidth = gameContainer.clientWidth;
+            const containerHeight = gameContainer.clientHeight;
+
+            for (let i = 0; i < wallCount; i++) {
+                const wall = document.createElement('div');
+                wall.className = 'wall';
+                
+                // 根据难度调整墙的尺寸
+                const width = Math.random() * (maxWidth - minWidth) + minWidth;
+                const height = 10;
+                
+                // 确保墙之间有最小间距
+                let x, y;
+                let validPosition = false;
+                
+                // 尝试生成有效的位置
+                for (let attempt = 0; attempt < 10; attempt++) {
+                    x = Math.random() * (containerWidth - width);
+                    y = Math.random() * (containerHeight / 2) + 50;
+                    
+                    // 检查与已有墙的间距
+                    let tooClose = false;
+                    document.querySelectorAll('.wall').forEach(existingWall => {
+                        const existingRect = existingWall.getBoundingClientRect();
+                        const existingX = existingRect.left - gameContainer.getBoundingClientRect().left;
+                        const existingWidth = existingWall.offsetWidth;
+                        
+                        if (Math.abs(x - existingX) < minGap && Math.abs(x + width - (existingX + existingWidth)) < minGap) {
+                            tooClose = true;
+                        }
+                    });
+                    
+                    if (!tooClose) {
+                        validPosition = true;
+                        break;
+                    }
+                }
+                
+                // 如果多次尝试仍无法找到有效位置，强制使用最后生成的位置
+                if (!validPosition) {
+                    x = Math.random() * (containerWidth - width);
+                    y = Math.random() * (containerHeight / 2) + 50;
+                }
+
+                wall.style.width = `${width}px`;
+                wall.style.height = `${height}px`;
+                wall.style.left = `${x}px`;
+                wall.style.top = `${y}px`;
+
+                gameContainer.appendChild(wall);
+            }
+        }
+
+        // 获取基于用户技能和当前关卡的难度参数
+        function getDifficultyParams() {
+            if (gameMode === 'fixed') {
+                // 固定模式参数
+                return {
+                    wallCount: currentLevel * 2 + 1,
+                    minWidth: 50,
+                    maxWidth: 80,
+                    minGap: 10,
+                    ballSpeedMultiplier: currentLevel * 1.5,
+                    paddleWidth: 80 - (currentLevel - 1) * 5 // 随关卡增加减小挡板宽度
+                };
+            } else {
+                // 智能模式：基于用户技能等级和当前关卡动态调整
+                const baseWallCount = 3 + Math.floor(userSkillLevel / 2);
+                const levelFactor = currentLevel * 0.7;
+                
+                return {
+                    wallCount: Math.floor(baseWallCount + levelFactor),
+                    minWidth: Math.max(30, 60 - userSkillLevel * 3), // 技能越高，墙越窄
+                    maxWidth: Math.max(50, 90 - userSkillLevel * 5),
+                    minGap: Math.max(5, 20 - userSkillLevel * 2), // 技能越高，墙间距越小
+                    ballSpeedMultiplier: 1.2 + (userSkillLevel * 0.2) + (currentLevel * 0.3),
+                    paddleWidth: Math.max(50, 90 - userSkillLevel * 4 - (currentLevel - 1) * 3)
+                };
+            }
+        }
+
+        // 开始游戏
+        function startGame(mode) {
+            gameMode = mode;
+            levelSelect.style.display = 'none';
+            currentLevel = 1;
+            totalLevels = mode === 'fixed' ? 5 : 10; // 智能模式关卡更多
+            currentLevelEl.textContent = currentLevel;
+            
+            const difficultyParams = getDifficultyParams();
+            generateWalls(currentLevel, difficultyParams);
+            // 调整挡板宽度
+            paddle.style.width = `${difficultyParams.paddleWidth}px`;
+            resetBallPosition(difficultyParams);
+            
+            if (timerInterval) clearInterval(timerInterval);
+            startTime = new Date().getTime();
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            gameRunning = true;
+            moveBall();
+        }
+
+        // 重置游戏状态
+        function resetGameState() {
+            clearInterval(timerInterval);
+            gameRunning = false;
+            timerEl.textContent = '00:00';
+            currentLevelEl.textContent = '1';
+            levelSelect.style.display = 'block';
+            document.querySelectorAll('.wall').forEach(wall => wall.remove());
+            paddle.style.width = '80px'; // 重置挡板宽度
+            resetBallPosition(getDifficultyParams());
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            resetGameState();
+            startGame(gameMode);
+        }
+
+        // 重置球的位置
+        function resetBallPosition(difficultyParams) {
+            const containerWidth = gameContainer.clientWidth;
+            const containerHeight = gameContainer.clientHeight;
+            
+            ball.style.left = `${containerWidth / 2 - 7.5}px`;
+            ball.style.top = `${containerHeight - 50}px`;
+            
+            // 根据难度参数设置球速
+            const baseSpeed = difficultyParams ? difficultyParams.ballSpeedMultiplier : 2.5;
+            ballSpeedX = baseSpeed;
+            ballSpeedY = -baseSpeed;
+        }
+
+        // 更新计时器
+        function updateTimer() {
+            const currentTime = new Date().getTime();
+            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+            const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+            const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+            timerEl.textContent = `${minutes}:${seconds}`;
+        }
+
+        // 移动球
+        function moveBall() {
+            if (!gameRunning) return;
+
+            let ballX = parseFloat(ball.style.left);
+            let ballY = parseFloat(ball.style.top);
+            const ballSize = ball.offsetWidth;
+            const containerWidth = gameContainer.clientWidth;
+            const containerHeight = gameContainer.clientHeight;
+            
+            // 获取挡板的实际位置和尺寸
+            const paddleRect = paddle.getBoundingClientRect();
+            const gameContainerRect = gameContainer.getBoundingClientRect();
+            const paddleX = paddleRect.left - gameContainerRect.left;
+            const paddleY = paddleRect.top - gameContainerRect.top;
+            const paddleWidth = paddle.offsetWidth;
+            const paddleHeight = paddle.offsetHeight;
+
+            // 碰撞检测 - 左右墙壁
+            if (ballX <= 0 || ballX >= containerWidth - ballSize) {
+                ballSpeedX = -ballSpeedX;
+            }
+
+            // 碰撞检测 - 上墙壁
+            if (ballY <= 0) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // 挡板碰撞检测
+            if (
+                ballY + ballSize >= paddleY &&
+                ballX + ballSize >= paddleX &&
+                ballX <= paddleX + paddleWidth &&
+                ballY <= paddleY + paddleHeight
+            ) {
+                ballSpeedY = -Math.abs(ballSpeedY);
+                // 根据碰撞位置调整X方向速度
+                const hitPosition = (ballX + ballSize/2) - (paddleX + paddleWidth/2);
+                ballSpeedX = hitPosition * 0.3;
+            }
+
+            // 碰撞检测 - 墙壁
+            const walls = document.querySelectorAll('.wall');
+            walls.forEach(wall => {
+                const wallRect = wall.getBoundingClientRect();
+                const wallX = wallRect.left - gameContainerRect.left;
+                const wallY = wallRect.top - gameContainerRect.top;
+                const wallWidth = wall.offsetWidth;
+                const wallHeight = wall.offsetHeight;
+
+                if (
+                    ballX + ballSize > wallX &&
+                    ballX < wallX + wallWidth &&
+                    ballY + ballSize > wallY &&
+                    ballY < wallY + wallHeight
+                ) {
+                    wall.remove();
+                    ballSpeedY = -ballSpeedY;
+
+                    // 增加球速，使游戏逐渐变难
+                    const speedIncrease = 0.2;
+                    if (ballSpeedX > 0) ballSpeedX += speedIncrease;
+                    else ballSpeedX -= speedIncrease;
+                    if (ballSpeedY > 0) ballSpeedY += speedIncrease;
+                    else ballSpeedY -= speedIncrease;
+
+                    if (document.querySelectorAll('.wall').length === 0) {
+                        if (currentLevel < totalLevels) {
+                            currentLevel++;
+                            currentLevelEl.textContent = currentLevel;
+                            // 下一关使用新的难度参数
+                            setTimeout(() => {
+                                const difficultyParams = getDifficultyParams();
+                                generateWalls(currentLevel, difficultyParams);
+                                paddle.style.width = `${difficultyParams.paddleWidth}px`;
+                            }, 500);
+                        } else {
+                            completeGame();
+                        }
+                    }
+                }
+            });
+
+            // 球落地（游戏失败）
+            if (ballY >= containerHeight - ballSize) {
+                const elapsedTime = timerEl.textContent;
+                const [minutes, seconds] = elapsedTime.split(':').map(Number);
+                const totalSeconds = minutes * 60 + seconds;
+                
+                // 更新技能等级（失败）
+                updateUserSkillLevel(false, totalSeconds);
+                
+                // 显示游戏失败弹窗
+                showGameOverModal(false, elapsedTime);
+                return;
+            }
+
+            // 更新球的位置
+            ball.style.left = `${ballX + ballSpeedX}px`;
+            ball.style.top = `${ballY + ballSpeedY}px`;
+
+            requestAnimationFrame(moveBall);
+        }
+
+        // 显示游戏结束弹窗
+        function showGameOverModal(isWin, elapsedTime) {
+            clearInterval(timerInterval);
+            gameRunning = false;
+            
+            if (isWin) {
+                modalTitle.textContent = '恭喜通关！';
+                modalMessage.textContent = `总关卡：${totalLevels}，总用时：${elapsedTime}\n你的技能等级：${userSkillLevel}`;
+            } else {
+                modalTitle.textContent = '游戏失败';
+                modalMessage.textContent = `当前关卡：${currentLevel}，用时：${elapsedTime}\n你的技能等级：${userSkillLevel}`;
+            }
+            
+            gameOverModal.style.display = 'flex';
+        }
+
+        // 挡板跟随鼠标
+        gameContainer.addEventListener('mousemove', (e) => {
+            const containerRect = gameContainer.getBoundingClientRect();
+            const paddleWidth = paddle.offsetWidth;
+            let paddleX = e.clientX - containerRect.left - paddleWidth / 2;
+
+            if (paddleX < 0) paddleX = 0;
+            if (paddleX > containerRect.width - paddleWidth) {
+                paddleX = containerRect.width - paddleWidth;
+            }
+
+            paddle.style.left = `${paddleX}px`;
+        });
+
+        // 完成游戏（记录成绩）
+        function completeGame() {
+            const elapsedTime = timerEl.textContent;
+            const [minutes, seconds] = elapsedTime.split(':').map(Number);
+            const totalSeconds = minutes * 60 + seconds;
+
+            // 更新技能等级（胜利）
+            updateUserSkillLevel(true, totalSeconds);
+
+            const ranks = JSON.parse(localStorage.getItem('marbleRanks'));
+            ranks.push({
+                username: currentUser,
+                level: totalLevels,
+                time: elapsedTime,
+                totalSeconds: totalSeconds,
+                date: new Date().toLocaleString(),
+                skillLevel: userSkillLevel
+            });
+            localStorage.setItem('marbleRanks', JSON.stringify(ranks));
+
+            // 显示通关弹窗
+            showGameOverModal(true, elapsedTime);
+        }
+
+        // 加载排行榜数据
+        function loadRankData() {
+            const ranks = JSON.parse(localStorage.getItem('marbleRanks'));
+            const personalRankEl = document.getElementById('personalRank');
+            const totalRankEl = document.getElementById('totalRank');
+
+            personalRankEl.innerHTML = '';
+            totalRankEl.innerHTML = '';
+
+            const personalRanks = ranks
+                .filter(record => record.username === currentUser)
+                .sort((a, b) => a.totalSeconds - b.totalSeconds);
+
+            if (personalRanks.length === 0) {
+                personalRankEl.innerHTML = '<li class="rank-item">暂无历史成绩</li>';
+            } else {
+                personalRanks.forEach((record, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'rank-item';
+                    li.innerHTML = `
+                        <span>第${index + 1}次通关</span>
+                        <span>难度：${record.level}级</span>
+                        <span>用时：${record.time}</span>
+                        <span>技能等级：${record.skillLevel}</span>
+                        <span>日期：${record.date}</span>
+                    `;
+                    personalRankEl.appendChild(li);
+                });
+            }
+
+            const userBestRanks = {};
+            ranks.forEach(record => {
+                if (!userBestRanks[record.username] || record.totalSeconds < userBestRanks[record.username].totalSeconds) {
+                    userBestRanks[record.username] = record;
+                }
+            });
+
+            const totalRanks = Object.values(userBestRanks)
+                .sort((a, b) => a.totalSeconds - b.totalSeconds)
+                .slice(0, 10);
+
+            if (totalRanks.length === 0) {
+                totalRankEl.innerHTML = '<li class="rank-item">暂无排行榜数据</li>';
+            } else {
+                totalRanks.forEach((record, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'rank-item';
+                    li.innerHTML = `
+                        <span>第${index + 1}名</span>
+                        <span>用户：${record.username}</span>
+                        <span>难度：${record.level}级</span>
+                        <span>最佳用时：${record.time}</span>
+                    `;
+                    totalRankEl.appendChild(li);
+                });
+            }
+        }
+
+        // 弹窗按钮事件
+        continueBtn.addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            restartGame();
+        });
+
+        homeBtn.addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            resetGameState();
+        });
+
+        // 初始化
+        window.onload = function() {
+            initLocalStorage();
+            resetBallPosition(getDifficultyParams());
+        };
+    </script>
+</body>
+</html>
